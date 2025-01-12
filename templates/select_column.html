@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Column for Prediction</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Select Column for Prediction</h1>
+        <p>Please choose a column from the uploaded Excel file for prediction.</p>
+        <form action="/predict" method="post">
+            <label for="column">Choose a column:</label>
+            <select name="column" id="column">
+                {% for column in columns %}
+                    <option value="{{ column }}">{{ column }}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Predict">
+        </form>
+    </div>
+</body>
+</html>
