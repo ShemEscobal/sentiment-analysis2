@@ -1,5 +1,6 @@
 import pandas as pd
 from transformers import pipeline
+import torch
 
 def classify_emotions(df, text_column):
     """
@@ -8,48 +9,57 @@ def classify_emotions(df, text_column):
     Parameters:
     - df: DataFrame containing the text to classify
     - text_column: Name of the column containing text to classify
+    
+    Returns:
+    - DataFrame with predicted emotions
     """
-    # Load the emotion classification pipeline
-    emotion_classifier = pipeline("text-classification", 
-                                model="SamLowe/roberta-base-go_emotions")
-    
-    # Validate that the text column exists
-    if text_column not in df.columns:
-        raise ValueError(f"Column '{text_column}' not found in the DataFrame.")
-    
-    def preprocess_text(text):
-        """Clean and validate text input."""
-        # Convert to string if not already
-        if not isinstance(text, str):
-            text = str(text)
-        
-        # Handle NaN, None, empty strings and whitespace
-        if pd.isna(text) or text.strip() == "":
-            return ""
-        return text.strip()
-    
-    def classify_batch(texts):
-        """
-        Classify emotions for a batch of texts with proper handling of invalid inputs.
-        """
-        processed_texts = [preprocess_text(text) for text in texts]
-        results = []
-        
-        for text in processed_texts:
-            if text == "":
-                results.append({"label": "NO_TEXT"})
-            else:
-                try:
-                    # Get prediction for valid text
-                    prediction = emotion_classifier(text)[0]
-                    results.append(prediction)
-                except Exception as e:
-                    print(f"Error processing text: {str(e)}")
-                    results.append({"label": "NO_TEXT"})
-        
-        return [result['label'] for result in results]
-
     try:
+        # Explicitly set device
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        # Load the emotion classification pipeline with device specification
+        emotion_classifier = pipeline(
+            "text-classification",
+            model="SamLowe/roberta-base-go_emotions",
+            device=device
+        )
+        
+        # Validate that the text column exists
+        if text_column not in df.columns:
+            raise ValueError(f"Column '{text_column}' not found in the DataFrame.")
+        
+        def preprocess_text(text):
+            """Clean and validate text input."""
+            # Convert to string if not already
+            if not isinstance(text, str):
+                text = str(text)
+            
+            # Handle NaN, None, empty strings and whitespace
+            if pd.isna(text) or text.strip() == "":
+                return ""
+            return text.strip()
+        
+        def classify_batch(texts):
+            """
+            Classify emotions for a batch of texts with proper handling of invalid inputs.
+            """
+            processed_texts = [preprocess_text(text) for text in texts]
+            results = []
+            
+            for text in processed_texts:
+                if text == "":
+                    results.append({"label": "NO_TEXT"})
+                else:
+                    try:
+                        # Get prediction for valid text
+                        prediction = emotion_classifier(text, max_length=512)[0]
+                        results.append(prediction)
+                    except Exception as e:
+                        print(f"Error processing text: {str(e)}")
+                        results.append({"label": "ERROR"})
+            
+            return [result['label'] for result in results]
+
         # Get the texts to classify
         texts_to_classify = df[text_column].fillna("").tolist()
         
@@ -71,4 +81,17 @@ def classify_emotions(df, text_column):
         
     except Exception as e:
         print(f"Error in emotion classification: {str(e)}")
-        return pd.DataFrame({'predicted_emotion': ['error'] * len(df)})
+        raise  # Re-raise the exception for better error handling
+
+# Example usage:
+if __name__ == "__main__":
+    # Create sample DataFrame
+    sample_df = pd.DataFrame({
+        'text': ['I am happy today!', 'This makes me angry', 'I feel sad']
+    })
+    
+    try:
+        results = classify_emotions(sample_df, 'text')
+        print(results)
+    except Exception as e:
+        print(f"Failed to classify emotions: {str(e)}")
