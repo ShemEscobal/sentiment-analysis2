@@ -1,0 +1,8 @@
+Flask
+pandas
+openpyxl
+gunicorn
+torch
+torchvision 
+torchaudio
+transformers
