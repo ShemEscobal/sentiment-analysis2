@@ -1,56 +1,58 @@
-import os
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from fb_classifier import classify_emotions
 
-# Set upload folder using absolute path
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Streamlit app
-st.title("Feedback Classification App")
-
-# File uploader
-uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
-
-if uploaded_file is not None:
-    try:
-        # Save the uploaded file
-        filepath = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
-        with open(filepath, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        
+def main():
+    st.title("Emotion Classification App")
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
+    
+    if uploaded_file is not None:
         # Read the uploaded Excel file
-        df = pd.read_excel(filepath)
+        df = pd.read_excel(uploaded_file)
         
-        # Display columns for selection
-        selected_column = st.selectbox("Select the column to analyze", df.columns)
+        # Validate data size
+        if len(df) > 1000:
+            st.error("File too large. Please limit to 1000 rows.")
+            return
+        
+        # Get the columns for selection
+        columns = df.columns.tolist()
+        selected_column = st.selectbox("Select a column for prediction", columns)
         
         if st.button("Classify Emotions"):
-            # Classify emotions
-            classified_df = classify_emotions(df, selected_column)
-            
-            # Prepare predictions
-            predictions = classified_df['predicted_emotion'].tolist()
-            
-            # Count labels
-            label_counts = {}
-            for label in predictions:
-                label_counts[label] = label_counts.get(label, 0) + 1
-            
-            total_responses = len(predictions)
-            
-            # Display results
-            st.write("### Classification Results")
-            st.write(f"Total Responses: {total_responses}")
-            st.write("Label Counts:")
-            st.write(label_counts)
-            
-            # Clean up the uploaded file
-            try:
-                os.remove(filepath)
-            except Exception as e:
-                st.warning(f"Failed to remove temporary file: {str(e)}")
+            if selected_column:
+                # Process in smaller batches
+                batch_size = 50
+                results = []
+                
+                for i in range(0, len(df), batch_size):
+                    batch = df.iloc[i:i + batch_size].copy()
+                    classified_batch = classify_emotions(batch, selected_column)
+                    results.append(classified_batch['predicted_emotion'])
+                
+                # Combine results
+                predictions = pd.concat(results).tolist()
+                
+                # Count labels
+                label_counts = {}
+                for label in predictions:
+                    label_counts[label] = label_counts.get(label, 0) + 1
+                
+                # Display results as pie chart
+                st.write("Prediction Results:")
+                fig, ax = plt.subplots()
+                ax.pie(label_counts.values(), labels=label_counts.keys(), autopct='%1.1f%%', startangle=90)
+                st.pyplot(fig)
+
+                # Display predictions in a table with counts
+                prediction_df = pd.DataFrame({'Predicted Emotion': predictions})
+                count_df = prediction_df.value_counts().reset_index(name='Count')
+                st.dataframe(count_df)
+            else:
+                st.error("No column selected.")
     
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+if __name__ == "__main__":
+    main()
