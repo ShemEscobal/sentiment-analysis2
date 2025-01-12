@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Report</title>
+    <link rel="shortcut icon" href="/path-to-your-favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/path-to-your-site.webmanifest">
+    <style>
+        /* Modernized styles with better mobile touch optimization */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #a80303;
+        }
+        h2 {
+            color: #333;
+        }
+        .error-message {
+            color: #a80303;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 20px; /* Ensure spacing below chart */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 1rem;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #a80303;
+            color: #fff;
+        }
+        .btn {
+            display: inline-block;
+            position: relative;
+            z-index: 10; /* Bring the button above other elements */
+            padding: 12px 20px;
+            background-color: #a80303;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        .btn:hover {
+            background-color: #630303;
+        }
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.6rem;
+            }
+            h2 {
+                font-size: 1.4rem;
+            }
+            .btn {  
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Prediction Report</h1>
+        <h2>Total Responses: {{ total_responses }}</h2> <!-- Display total responses -->
+        <h2>Label Counts:</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Label</th>
+                    <th>Count</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if label_counts %}
+                    {% set total = label_counts.values()|sum %}
+                    {% set items = [] %}
+                    {% for label, count in label_counts.items() %}
+                        {% set percentage = (count/total * 100)|round(1) %}
+                        {% set _ = items.append((label, count, percentage)) %}
+                    {% endfor %}
+                    {% for label, count, percentage in items|sort(attribute=2, reverse=true) %}
+                    <tr>
+                        <td>{{ label }}</td>
+                        <td>{{ count }}</td>
+                        <td>{{ percentage }}%</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3">No data available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <div class="chart-container">
+            <h2>Pie Chart of Predictions</h2>
+            <canvas id="labelChart"></canvas>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn">Back to Home</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const labelCounts = JSON.parse('{{ label_counts | tojson | safe }}');
+            const ctx = document.getElementById('labelChart').getContext('2d');
+
+            if (!labelCounts || Object.keys(labelCounts).length === 0) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = 'No data available for visualization';
+                ctx.canvas.parentNode.insertBefore(errorDiv, ctx.canvas);
+                ctx.canvas.style.display = 'none';
+                return;
+            }
+
+            const labels = Object.keys(labelCounts);
+            const data = Object.values(labelCounts);
+            const total = data.reduce((acc, val) => acc + val, 0);
+
+            const formattedLabels = labels.map((label, index) => {
+                const percentage = ((data[index] / total) * 100).toFixed(1);
+                return `${label} (${percentage}%)`;
+            });
+
+            const backgroundColors = [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF',
+                '#641e16', // Unique orange color
+                '#FF1493',
+                '#00FF7F',
+                '#154360',
+                '#00BFFF',
+                '#800080',
+                '#FF69B4',
+                '#008080'
+            ];
+
+            const borderColors = [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF',
+                '#641e16', // Unique orange color
+                '#FF1493',
+                '#00FF7F',
+                '#154360',
+                '#00BFFF',
+                '#800080',
+                '#FF69B4',
+                '#008080'
+            ];
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: formattedLabels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribution of Predictions',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label.split(' (')[0]}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
