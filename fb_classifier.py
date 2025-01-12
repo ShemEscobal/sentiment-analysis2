@@ -51,8 +51,8 @@ def classify_emotions(df, text_column):
                     results.append({"label": "NO_TEXT"})
                 else:
                     try:
-                        # Get prediction for valid text
-                        prediction = emotion_classifier(text, max_length=512)[0]
+                        # Get prediction for valid text with explicit truncation
+                        prediction = emotion_classifier(text, max_length=512, truncation=True)[0]
                         results.append(prediction)
                     except Exception as e:
                         print(f"Error processing text: {str(e)}")
