@@ -5,6 +5,7 @@ from fb_classifier import classify_emotions
 
 def main():
     st.title("Emotion Classification App")
+    st.subheader("Upload an Excel file with text data and select a column you want to classify.")
     
     # File uploader
     uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
