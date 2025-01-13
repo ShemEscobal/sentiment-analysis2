@@ -75,17 +75,13 @@ def main():
                 # Display pie chart with only colors
                 st.write("Prediction Results:")
                 fig, ax = plt.subplots()
-                wedges, texts, autotexts = ax.pie(
+                ax.pie(
                     label_counts.values(),
                     colors=[emotion_colors.get(emotion, '#000000') for emotion in label_counts.keys()],
                     startangle=90
                 )
-                # Remove all labels and percentages
-                for text in texts:
-                    text.set_visible(False)
-                for autotext in autotexts:
-                    autotext.set_visible(False)
                 st.pyplot(fig)
+
 
                 # Display styled table
                 st.dataframe(
