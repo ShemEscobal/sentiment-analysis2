@@ -55,8 +55,6 @@ def main():
                     'curiosity': '#bcbd22'
                 }
 
-
-
                 # Calculate percentages
                 total = sum(label_counts.values())
                 percentages = {k: (v/total)*100 for k, v in label_counts.items()}
@@ -71,7 +69,7 @@ def main():
                         'Percentage': f"{percentages[emotion]:.1f}%",
                         'Color': color
                     })
-                
+
                 # Display pie chart with only colors
                 st.write("Prediction Results:")
                 fig, ax = plt.subplots()
@@ -82,21 +80,16 @@ def main():
                 )
                 st.pyplot(fig)
 
-
-                # Display styled table
+                # Display styled table with color indicators
+                def color_cell(val):
+                    return f'background-color: {val}'
+                
+                styled_df = pd.DataFrame(table_data).style.applymap(color_cell, subset=['Color'])
                 st.dataframe(
-                    pd.DataFrame(table_data),
-                    column_config={
-                        "Color": st.column_config.ColorColumn(
-                            "Color",
-                            help="Color representation of the emotion",
-                            required=True
-                        )
-                    },
+                    styled_df,
                     hide_index=True,
                     use_container_width=True
                 )
-
 
             else:
                 st.error("No column selected.")
