@@ -42,25 +42,66 @@ def main():
                 for label in predictions:
                     label_counts[label] = label_counts.get(label, 0) + 1
                 
-                # Display results as pie chart
+                # Define color mapping for emotions
+                emotion_colors = {
+                    'approval': '#1f77b4',
+                    'admiration': '#ff7f0e',
+                    'neutral': '#2ca02c',
+                    'caring': '#d62728',
+                    'realization': '#9467bd',
+                    'joy': '#8c564b',
+                    'NO_TEXT': '#e377c2',
+                    'gratitude': '#7f7f7f',
+                    'curiosity': '#bcbd22'
+                }
+
+
+
+                # Calculate percentages
+                total = sum(label_counts.values())
+                percentages = {k: (v/total)*100 for k, v in label_counts.items()}
+                
+                # Create table with colors and percentages
+                table_data = []
+                for emotion, count in label_counts.items():
+                    color = emotion_colors.get(emotion, '#000000')
+                    table_data.append({
+                        'Predicted Emotion': emotion,
+                        'Count': count,
+                        'Percentage': f"{percentages[emotion]:.1f}%",
+                        'Color': color
+                    })
+                
+                # Display pie chart with only colors
                 st.write("Prediction Results:")
                 fig, ax = plt.subplots()
                 wedges, texts, autotexts = ax.pie(
-                    label_counts.values(), 
-                    autopct='%1.1f%%', 
-                    startangle=90,
-                    pctdistance=0.85
+                    label_counts.values(),
+                    colors=[emotion_colors.get(emotion, '#000000') for emotion in label_counts.keys()],
+                    startangle=90
                 )
-                # Remove labels and show only percentages
+                # Remove all labels and percentages
                 for text in texts:
                     text.set_visible(False)
+                for autotext in autotexts:
+                    autotext.set_visible(False)
                 st.pyplot(fig)
 
+                # Display styled table
+                st.dataframe(
+                    pd.DataFrame(table_data),
+                    column_config={
+                        "Color": st.column_config.ColorColumn(
+                            "Color",
+                            help="Color representation of the emotion",
+                            required=True
+                        )
+                    },
+                    hide_index=True,
+                    use_container_width=True
+                )
 
-                # Display predictions in a table with counts
-                prediction_df = pd.DataFrame({'Predicted Emotion': predictions})
-                count_df = prediction_df.value_counts().reset_index(name='Count')
-                st.dataframe(count_df)
+
             else:
                 st.error("No column selected.")
     
