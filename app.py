@@ -23,7 +23,7 @@ def get_color_mapping(labels):
     return dict(zip(unique_labels, colors))
 
 def main():
-    st.title("Emotion Classification App")
+    st.title("Feedback Classification App")
     st.subheader("Upload an Excel file with text data and select a column you want to classify.")
     
     # File uploader
