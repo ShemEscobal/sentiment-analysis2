@@ -45,8 +45,17 @@ def main():
                 # Display results as pie chart
                 st.write("Prediction Results:")
                 fig, ax = plt.subplots()
-                ax.pie(label_counts.values(), labels=label_counts.keys(), autopct='%1.1f%%', startangle=90)
+                wedges, texts, autotexts = ax.pie(
+                    label_counts.values(), 
+                    autopct='%1.1f%%', 
+                    startangle=90,
+                    pctdistance=0.85
+                )
+                # Remove labels and show only percentages
+                for text in texts:
+                    text.set_visible(False)
                 st.pyplot(fig)
+
 
                 # Display predictions in a table with counts
                 prediction_df = pd.DataFrame({'Predicted Emotion': predictions})
